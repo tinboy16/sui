@@ -52,7 +52,7 @@ pub mod gossip;
 use gossip::{gossip_process, node_sync_process};
 
 pub mod checkpoint_driver;
-use checkpoint_driver::checkpoint_process;
+use checkpoint_driver::{checkpoint_process, sync_to_checkpoint};
 
 pub mod execution_driver;
 
@@ -227,6 +227,22 @@ impl<A> ActiveAuthority<A>
 where
     A: AuthorityAPI + Send + Sync + 'static + Clone,
 {
+
+    pub async fn sync_to_latest_checkpoint(self: Arc<Self>) {
+
+        let mut checkpoint_store = self
+            .checkpoints
+            .as_ref()
+            .ok_or(SuiError::UnsupportedFeatureError {
+                error: "Checkpoint not supported".to_owned(),
+            })?;
+
+      sync_to_checkpoint(self.state.clone(), self.node_sync_store.clone(), self.net.clone(),
+
+        checkpoint_store.clone(),
+
+    }
+
     pub async fn spawn_checkpoint_process(self: Arc<Self>) {
         self.spawn_checkpoint_process_with_config(Some(CheckpointProcessControl::default()))
             .await

@@ -161,6 +161,7 @@ impl SuiNode {
                 sui_core::gateway_state::GatewayMetrics::new(&prometheus_registry);
             let pending_store =
                 Arc::new(NodeSyncStore::open(config.db_path().join("node_sync_db"))?);
+
             let active_authority = Arc::new(ActiveAuthority::new(
                 state.clone(),
                 pending_store,
@@ -168,6 +169,8 @@ impl SuiNode {
                 authority_clients,
                 gateway_metrics,
             )?);
+
+            active_authority.sync_to_latest_checkpoint().await?;
 
             Some(if is_validator {
                 // TODO: get degree from config file.
