@@ -5,16 +5,16 @@ use std::collections::HashSet;
 use std::sync::Arc;
 use sui_core::{
     authority::AuthorityState,
-    authority_client::NetworkAuthorityClient,
-    authority_aggregator::AuthorityAggregator,
     authority_active::{checkpoint_driver::CheckpointProcessControl, ActiveAuthority},
+    authority_aggregator::AuthorityAggregator,
+    authority_client::NetworkAuthorityClient,
     gateway_state::GatewayMetrics,
 };
 use sui_node::SuiNode;
 use sui_types::{
     base_types::{ExecutionDigests, TransactionDigest},
     crypto::get_key_pair_from_rng,
-    messages::{CallArg, ExecutionStatus, ObjectArg},
+    messages::{CallArg, ExecutionStatus, ObjectArg, Transaction},
 };
 use test_utils::transaction::publish_counter_package;
 use test_utils::{
@@ -51,7 +51,10 @@ fn transactions_in_checkpoint(authority: &AuthorityState) -> HashSet<Transaction
         .collect::<HashSet<_>>()
 }
 
-async fn spawn_checkpoint_processes(aggregator: &AuthorityAggregator<NetworkAuthorityClient>, handles: &[SuiNode]) {
+async fn spawn_checkpoint_processes(
+    aggregator: &AuthorityAggregator<NetworkAuthorityClient>,
+    handles: &[SuiNode],
+) {
     // Start active part of each authority.
     for authority in handles {
         let state = authority.state().clone();
@@ -74,11 +77,13 @@ async fn spawn_checkpoint_processes(aggregator: &AuthorityAggregator<NetworkAuth
                 .await
         });
     }
-
 }
 
-async fn execute_transactions(aggregator: &AuthorityAggregator<NetworkAuthorityClient>, transactions: &[Transaction]) {
-    for transaction in &transactions {
+async fn execute_transactions(
+    aggregator: &AuthorityAggregator<NetworkAuthorityClient>,
+    transactions: &[Transaction],
+) {
+    for transaction in transactions {
         let (_, effects) = aggregator
             .clone()
             .execute_transaction(transaction)
@@ -96,7 +101,10 @@ async fn execute_transactions(aggregator: &AuthorityAggregator<NetworkAuthorityC
     }
 }
 
-async fn wait_for_advance_to_next_checkpoint(handles: &[SuiNode], transaction_digests: &HashSet<TransactionDigest>) {
+async fn wait_for_advance_to_next_checkpoint(
+    handles: &[SuiNode],
+    transaction_digests: &HashSet<TransactionDigest>,
+) {
     let start = Instant::now();
     // Wait for the transactions to be executed and end up in a checkpoint.
     loop {
@@ -131,7 +139,12 @@ async fn wait_for_advance_to_next_checkpoint(handles: &[SuiNode], transaction_di
 
     for node in handles {
         for digest in transaction_digests.iter() {
-            assert!(node.state().check_tx_already_executed(digest).await.unwrap().is_some());
+            assert!(node
+                .state()
+                .check_tx_already_executed(digest)
+                .await
+                .unwrap()
+                .is_some());
         }
     }
 }
