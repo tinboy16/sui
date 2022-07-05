@@ -651,6 +651,18 @@ impl AuthorityState {
         Ok((temporary_store, signed_effects))
     }
 
+    pub async fn check_tx_already_executed(
+        &self,
+        digest: &TransactionDigest,
+    ) -> SuiResult<Option<TransactionInfoResponse>> {
+        if self.database.effects_exists(digest)? {
+            debug!("Transaction {digest:?} already executed");
+            Ok(Some(self.make_transaction_info(digest).await?))
+        } else {
+            Ok(None)
+        }
+    }
+
     fn index_tx(
         &self,
         indexes: &IndexStore,
